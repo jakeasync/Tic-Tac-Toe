@@ -1,17 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import confetti from "canvas-confetti";
+import { BotAvatar } from "bot-avatars";
 import { 
   ArrowLeft, 
   Menu, 
   Moon, 
   Sun, 
   Contrast, 
-  RotateCcw, 
-  Heart, 
-  Bot, 
-  Users, 
   ArrowRight,
   Volume2,
   VolumeX,
@@ -19,8 +16,7 @@ import {
 } from "lucide-react";
 
 type ThemeMode = "system" | "light" | "dark";
-type GameMode = "pvp" | "ai";
-type Player = "Rabbit" | "Carrot" | null;
+type Player = "Flower" | "Star" | null;
 
 interface WinningInfo {
   winner: Player;
@@ -40,19 +36,24 @@ const WINNING_COMBOS = [
 
 export default function TicTacToe() {
   const [board, setBoard] = useState<Player[]>(Array(9).fill(null));
-  const [isRabbitNext, setIsRabbitNext] = useState<boolean>(true);
+  const [isFlowerNext, setIsFlowerNext] = useState<boolean>(true);
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
-  const [gameMode, setGameMode] = useState<GameMode>("pvp");
-  const [scores, setScores] = useState({ rabbit: 0, carrot: 0, draws: 0 });
+  const [scores, setScores] = useState({ flower: 0, star: 0, draws: 0 });
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
-  const [liked, setLiked] = useState<boolean>(false);
-  const [likeCount, setLikeCount] = useState<number>(3142);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [winningInfo, setWinningInfo] = useState<WinningInfo | null>(null);
   const [isDraw, setIsDraw] = useState<boolean>(false);
-  const [aiThinking, setAiThinking] = useState<boolean>(false);
+  const [activeCell, setActiveCell] = useState<number | null>(null);
 
-  // Sound generator
+  useEffect(() => {
+    if (activeCell !== null) {
+      const timer = setTimeout(() => {
+        setActiveCell(null);
+      }, 750);
+      return () => clearTimeout(timer);
+    }
+  }, [activeCell]);
+
   const playSound = useCallback((type: "click" | "win" | "draw" | "reset") => {
     if (!soundEnabled || typeof window === "undefined") return;
     try {
@@ -63,14 +64,14 @@ export default function TicTacToe() {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
-        osc.frequency.setValueAtTime(480, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(720, ctx.currentTime + 0.06);
+        osc.frequency.setValueAtTime(520, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(780, ctx.currentTime + 0.05);
         gain.gain.setValueAtTime(0.12, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.06);
+        osc.stop(ctx.currentTime + 0.05);
       } else if (type === "win") {
         const freqs = [523.25, 659.25, 783.99, 1046.5];
         freqs.forEach((freq, idx) => {
@@ -78,19 +79,19 @@ export default function TicTacToe() {
           const gain = ctx.createGain();
           osc.type = "triangle";
           osc.frequency.value = freq;
-          gain.gain.setValueAtTime(0.15, ctx.currentTime + idx * 0.09);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.09 + 0.2);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + idx * 0.08 + 0.22);
           osc.connect(gain);
           gain.connect(ctx.destination);
-          osc.start(ctx.currentTime + idx * 0.09);
-          osc.stop(ctx.currentTime + idx * 0.09 + 0.2);
+          osc.start(ctx.currentTime + idx * 0.08);
+          osc.stop(ctx.currentTime + idx * 0.08 + 0.22);
         });
       } else if (type === "draw" || type === "reset") {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
-        osc.frequency.setValueAtTime(400, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(420, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(260, ctx.currentTime + 0.1);
         gain.gain.setValueAtTime(0.08, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
         osc.connect(gain);
@@ -99,7 +100,6 @@ export default function TicTacToe() {
         osc.stop(ctx.currentTime + 0.1);
       }
     } catch {
-      // AudioContext unavailable
     }
   }, [soundEnabled]);
 
@@ -119,25 +119,25 @@ export default function TicTacToe() {
   const triggerCelebration = useCallback(() => {
     try {
       confetti({
-        particleCount: 70,
-        spread: 60,
-        origin: { y: 0.65 },
+        particleCount: 85,
+        spread: 75,
+        origin: { y: 0.6 },
         colors: ["#ea580c", "#10b981", "#fbbf24", "#38bdf8"],
       });
     } catch {
-      // fallback
     }
   }, []);
 
   const handleCellClick = useCallback((index: number) => {
-    if (board[index] || winningInfo || isDraw || (gameMode === "ai" && !isRabbitNext)) {
+    if (board[index] || winningInfo || isDraw) {
       return;
     }
 
     const newBoard = [...board];
-    const currentPlayer = isRabbitNext ? "Rabbit" : "Carrot";
+    const currentPlayer = isFlowerNext ? "Flower" : "Star";
     newBoard[index] = currentPlayer;
     setBoard(newBoard);
+    setActiveCell(index);
     playSound("click");
 
     const win = checkWinner(newBoard);
@@ -145,7 +145,7 @@ export default function TicTacToe() {
       setWinningInfo(win);
       setScores((prev) => ({
         ...prev,
-        [win.winner === "Rabbit" ? "rabbit" : "carrot"]: prev[win.winner === "Rabbit" ? "rabbit" : "carrot"] + 1,
+        [win.winner === "Flower" ? "flower" : "star"]: prev[win.winner === "Flower" ? "flower" : "star"] + 1,
       }));
       playSound("win");
       triggerCelebration();
@@ -159,112 +159,29 @@ export default function TicTacToe() {
       return;
     }
 
-    setIsRabbitNext(!isRabbitNext);
-  }, [board, winningInfo, isDraw, gameMode, isRabbitNext, playSound, triggerCelebration]);
-
-  // AI Logic for vs Bot
-  useEffect(() => {
-    if (gameMode !== "ai" || isRabbitNext || winningInfo || isDraw) return;
-
-    setAiThinking(true);
-    const timer = setTimeout(() => {
-      const empty = board
-        .map((val, idx) => (val === null ? idx : null))
-        .filter((val): val is number => val !== null);
-
-      if (empty.length === 0) return;
-
-      // 1. Can AI (Carrot) win?
-      for (const idx of empty) {
-        const test = [...board];
-        test[idx] = "Carrot";
-        if (checkWinner(test)) {
-          executeAiMove(idx);
-          return;
-        }
-      }
-
-      // 2. Can player (Rabbit) win? Block!
-      for (const idx of empty) {
-        const test = [...board];
-        test[idx] = "Rabbit";
-        if (checkWinner(test)) {
-          executeAiMove(idx);
-          return;
-        }
-      }
-
-      // 3. Center
-      if (empty.includes(4)) {
-        executeAiMove(4);
-        return;
-      }
-
-      // 4. Corner
-      const corners = [0, 2, 6, 8].filter((i) => empty.includes(i));
-      if (corners.length > 0) {
-        executeAiMove(corners[Math.floor(Math.random() * corners.length)]);
-        return;
-      }
-
-      executeAiMove(empty[Math.floor(Math.random() * empty.length)]);
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [isRabbitNext, gameMode, board, winningInfo, isDraw]);
-
-  const executeAiMove = (index: number) => {
-    setAiThinking(false);
-    const newBoard = [...board];
-    newBoard[index] = "Carrot";
-    setBoard(newBoard);
-    playSound("click");
-
-    const win = checkWinner(newBoard);
-    if (win) {
-      setWinningInfo(win);
-      setScores((prev) => ({ ...prev, carrot: prev.carrot + 1 }));
-      playSound("win");
-      triggerCelebration();
-      return;
-    }
-
-    if (newBoard.every((cell) => cell !== null)) {
-      setIsDraw(true);
-      setScores((prev) => ({ ...prev, draws: prev.draws + 1 }));
-      playSound("draw");
-      return;
-    }
-
-    setIsRabbitNext(true);
-  };
+    setIsFlowerNext(!isFlowerNext);
+  }, [board, winningInfo, isDraw, isFlowerNext, playSound, triggerCelebration]);
 
   const resetGame = () => {
     playSound("reset");
     setBoard(Array(9).fill(null));
-    setIsRabbitNext(true);
+    setIsFlowerNext(true);
     setWinningInfo(null);
     setIsDraw(false);
-    setAiThinking(false);
+    setActiveCell(null);
   };
 
   const resetAllScores = () => {
     resetGame();
-    setScores({ rabbit: 0, carrot: 0, draws: 0 });
+    setScores({ flower: 0, star: 0, draws: 0 });
     setIsMenuOpen(false);
   };
 
-  const toggleLike = () => {
-    setLiked(!liked);
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-  };
-
-  // Theme styles based on Nothing (R) Playground
   const isDark = themeMode === "dark";
   const isContrast = themeMode === "system";
 
   let bgClass = "bg-[#efede9] text-[#121212]";
-  let cardClass = "bg-[#f5f4f0] border-transparent shadow-[0_4px_24px_rgba(0,0,0,0.04)]";
+  let cardClass = "bg-[#f5f4f0] border border-black/5 shadow-none";
   let boardBg = "bg-[#ebe9e4]";
   let cellClass = "bg-[#dedbd5] hover:bg-[#d6d3cc] text-[#1e1e1e]";
   let headerPillBg = "bg-[#e5e3de] text-[#1e1e1e]";
@@ -272,13 +189,12 @@ export default function TicTacToe() {
 
   if (isDark) {
     bgClass = "bg-[#121212] text-[#f0f0f0]";
-    cardClass = "bg-[#1b1b1b] border-white/5 shadow-2xl";
+    cardClass = "bg-[#1b1b1b] border-white/5 shadow-none";
     boardBg = "bg-[#181818]";
     cellClass = "bg-[#252525] hover:bg-[#2d2d2d] text-[#f0f0f0]";
     headerPillBg = "bg-[#222222] text-[#e0e0e0]";
     menuBtnBg = "bg-[#ffffff] text-[#121212]";
   } else if (isContrast) {
-    // High-contrast / OLED monospaced look
     bgClass = "bg-[#000000] text-[#ffffff]";
     cardClass = "bg-[#0d0d0d] border border-white/20 shadow-none";
     boardBg = "bg-[#0a0a0a]";
@@ -287,181 +203,90 @@ export default function TicTacToe() {
     menuBtnBg = "bg-white text-black";
   }
 
-  // Status message
   let statusBanner = "";
   if (winningInfo) {
-    statusBanner = winningInfo.winner === "Rabbit" ? "Winner: Rabbit 🐰" : "Winner: Carrot 🥕";
+    statusBanner = winningInfo.winner === "Flower" ? "Winner: Flower 🌸" : "Winner: Star ⭐";
   } else if (isDraw) {
     statusBanner = "Game Drawn 🤝";
-  } else if (aiThinking) {
-    statusBanner = "Carrot AI is thinking...";
   } else {
-    statusBanner = isRabbitNext ? "Next player: Rabbit 🐰" : "Next player: Carrot 🥕";
+    statusBanner = isFlowerNext ? "Next player: Flower 🌸" : "Next player: Star ⭐";
   }
 
   return (
-    <div className={`min-h-screen flex flex-col items-center justify-between px-4 py-5 sm:p-6 transition-colors duration-300 font-sans ${bgClass}`}>
-      {/* Top Navigation Bar: Exact Nothing (R) Playground header */}
-      <header className="w-full max-w-md flex items-center justify-between pt-1 pb-3">
-        {/* Left Branding */}
-        <div className="flex flex-col">
-          <div className="font-ndot text-sm sm:text-base font-bold tracking-wider leading-none">
-            NOTHING (R)
+    <div className={`h-screen w-full flex flex-col justify-between px-3 sm:px-6 py-3 overflow-hidden transition-colors duration-300 font-sans ${bgClass}`}>
+      <main className="w-full flex-1 flex flex-col items-center justify-center my-auto py-1 max-w-sm sm:max-w-md mx-auto">
+        <div className="text-center mb-3">
+          <h1 className="text-2xl sm:text-[32px] font-bold tracking-tight text-neutral-900 dark:text-neutral-100 font-sans">
+            Tic-Tac-Toe
+          </h1>
+        </div>
+
+        <div className={`w-[325px] sm:w-[355px] flex items-center justify-between px-5 py-3 rounded-2xl transition-all ${boardBg} mb-3.5`}>
+          <div className="flex items-center gap-1.5">
+            <BotAvatar type="flower" color="#22c55e" size={24} jumpEvery={0} turn={0} interactive={false} />
+            <span className="text-neutral-500 dark:text-neutral-400 font-mono text-[13px] font-medium">Flower</span>
+            <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400 text-base">{scores.flower}</span>
           </div>
-          <div className="font-ndot text-[11px] text-neutral-400 dark:text-neutral-500 font-medium tracking-widest mt-0.5">
-            PLAYGROUND <span className="text-[9px] uppercase opacity-75">ALPHA</span>
+
+          <span className="text-neutral-300 dark:text-neutral-600 font-mono">•</span>
+
+          <div className="flex items-center gap-1.5">
+            <span className="text-neutral-500 dark:text-neutral-400 font-mono text-[13px] font-medium">Draws</span>
+            <span className="font-bold font-mono text-neutral-600 dark:text-neutral-300 text-base">{scores.draws}</span>
+          </div>
+
+          <span className="text-neutral-300 dark:text-neutral-600 font-mono">•</span>
+
+          <div className="flex items-center gap-1.5">
+            <BotAvatar type="star" color="#8d5b4c" size={24} jumpEvery={0} turn={0} interactive={false} />
+            <span className="text-neutral-500 dark:text-neutral-400 font-mono text-[13px] font-medium">Star</span>
+            <span className="font-bold font-mono text-amber-700 dark:text-amber-500 text-base">{scores.star}</span>
           </div>
         </div>
 
-        {/* Right Controls: 3 Theme Modes + Menu */}
-        <div className="flex items-center gap-2">
-          {/* Theme Selector Pill */}
-          <div className={`flex items-center p-1 rounded-full gap-0.5 transition-colors ${headerPillBg}`}>
-            {/* Contrast Mode */}
-            <button
-              onClick={() => setThemeMode("system")}
-              title="High Contrast / OLED"
-              className={`p-1.5 rounded-full transition-all ${
-                themeMode === "system"
-                  ? "bg-white/20 shadow-sm scale-110"
-                  : "opacity-60 hover:opacity-100"
-              }`}
-            >
-              <Contrast className="w-4 h-4" />
-            </button>
-
-            {/* Light Mode */}
-            <button
-              onClick={() => setThemeMode("light")}
-              title="Light Mode"
-              className={`p-1.5 rounded-full transition-all ${
-                themeMode === "light"
-                  ? "bg-black/10 dark:bg-white/20 shadow-sm scale-110"
-                  : "opacity-60 hover:opacity-100"
-              }`}
-            >
-              <Sun className="w-4 h-4" />
-            </button>
-
-            {/* Dark Mode */}
-            <button
-              onClick={() => setThemeMode("dark")}
-              title="Dark Mode"
-              className={`p-1.5 rounded-full transition-all ${
-                themeMode === "dark"
-                  ? "bg-white/20 shadow-sm scale-110"
-                  : "opacity-60 hover:opacity-100"
-              }`}
-            >
-              <Moon className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Menu Drawer Toggle Button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className={`w-14 h-9 flex items-center justify-center rounded-full transition-all active:scale-95 shadow-sm cursor-pointer ${menuBtnBg}`}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
-        </div>
-      </header>
-
-      {/* Slide-down / Dropdown Menu for Game Options */}
-      {isMenuOpen && (
-        <div className="w-full max-w-md animate-in fade-in slide-in-from-top-4 duration-200 mb-3">
-          <div className={`p-4 rounded-3xl border border-black/5 dark:border-white/10 shadow-lg ${cardClass}`}>
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-neutral-200 dark:border-neutral-800">
-              <span className="font-ndot text-xs uppercase tracking-widest font-semibold">Game Settings</span>
-              <button
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                className="flex items-center gap-1.5 text-xs opacity-75 hover:opacity-100 cursor-pointer"
-              >
-                {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-500" /> : <VolumeX className="w-4 h-4 text-neutral-400" />}
-                <span>{soundEnabled ? "Sound On" : "Muted"}</span>
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium">Mode</span>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => { setGameMode("pvp"); resetGame(); }}
-                    className={`px-3 py-1 rounded-full font-medium transition-all ${
-                      gameMode === "pvp" ? "bg-amber-400 text-black font-semibold" : "opacity-60 hover:opacity-100"
-                    }`}
-                  >
-                    <Users className="w-3.5 h-3.5 inline mr-1" />
-                    2 Players
-                  </button>
-                  <button
-                    onClick={() => { setGameMode("ai"); resetGame(); }}
-                    className={`px-3 py-1 rounded-full font-medium transition-all ${
-                      gameMode === "ai" ? "bg-amber-400 text-black font-semibold" : "opacity-60 hover:opacity-100"
-                    }`}
-                  >
-                    <Bot className="w-3.5 h-3.5 inline mr-1" />
-                    Vs AI
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-xs pt-1">
-                <span className="font-medium">Scoreboard</span>
-                <button
-                  onClick={resetAllScores}
-                  className="text-red-500 hover:text-red-600 font-semibold cursor-pointer"
-                >
-                  Reset Scores
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Back button row (Nothing Playground style) */}
-      <div className="w-full max-w-md flex items-center justify-start py-1">
-        <button
-          onClick={resetGame}
-          className="w-10 h-10 flex items-center justify-center rounded-full opacity-70 hover:opacity-100 active:scale-95 transition-all cursor-pointer"
-          title="Restart round"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Main Large Card Container */}
-      <div className={`w-full max-w-md p-6 sm:p-8 rounded-[36px] transition-all flex flex-col items-center my-auto ${cardClass}`}>
-        
-        {/* Game Arena / Board Rounded Inset Box */}
-        <div className={`w-full aspect-square max-w-[320px] p-4 sm:p-5 rounded-[32px] flex items-center justify-center transition-all ${boardBg}`}>
-          <div className="grid grid-cols-3 gap-3 w-full h-full">
+        <div className={`w-[325px] h-[325px] sm:w-[355px] sm:h-[355px] p-2.5 sm:p-3 rounded-[30px] flex items-center justify-center transition-all ${boardBg}`}>
+          <div className="grid grid-cols-3 gap-2.5 w-full h-full">
             {board.map((cell, idx) => {
               const isWinningSquare = winningInfo?.line.includes(idx);
+              const isActive = activeCell === idx;
+
               return (
                 <button
                   key={idx}
                   onClick={() => handleCellClick(idx)}
-                  disabled={Boolean(cell || winningInfo || isDraw || (gameMode === "ai" && !isRabbitNext))}
-                  className={`w-full h-full rounded-2xl flex items-center justify-center transition-all duration-150 active:scale-95 cursor-pointer disabled:cursor-default select-none ${cellClass} ${
+                  disabled={Boolean(cell || winningInfo || isDraw)}
+                  className={`w-full h-full rounded-2xl flex items-center justify-center overflow-hidden select-none cursor-pointer disabled:cursor-default ${cellClass} ${
                     isWinningSquare
-                      ? "ring-4 ring-amber-400 shadow-md scale-105 z-10"
+                      ? "ring-3 ring-amber-400 z-10"
                       : ""
                   }`}
                   aria-label={`Square ${idx + 1}`}
                 >
-                  {cell === "Rabbit" && (
-                    <span className="text-3xl sm:text-4xl animate-in zoom-in-75 duration-150 drop-shadow-sm">
-                      🐰
-                    </span>
+                  {cell === "Flower" && (
+                    <div className="pointer-events-none flex items-center justify-center w-full h-full">
+                      <BotAvatar
+                        type="flower"
+                        color="#22c55e"
+                        state={isActive ? "working" : "default"}
+                        size={75}
+                        jumpEvery={0}
+                        turn={isActive ? 1 : 0}
+                        interactive={false}
+                      />
+                    </div>
                   )}
-                  {cell === "Carrot" && (
-                    <span className="text-3xl sm:text-4xl animate-in zoom-in-75 duration-150 drop-shadow-sm">
-                      🥕
-                    </span>
+                  {cell === "Star" && (
+                    <div className="pointer-events-none flex items-center justify-center w-full h-full">
+                      <BotAvatar
+                        type="star"
+                        color="#8d5b4c"
+                        state={isActive ? "working" : "default"}
+                        size={75}
+                        jumpEvery={0}
+                        turn={isActive ? 1 : 0}
+                        interactive={false}
+                      />
+                    </div>
                   )}
                 </button>
               );
@@ -469,12 +294,11 @@ export default function TicTacToe() {
           </div>
         </div>
 
-        {/* Turn / Winner Status Banner */}
-        <div className="w-full text-center mt-5">
+        <div className="mt-3.5 mb-1.5">
           <div
-            className={`inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold tracking-wide transition-all ${
+            className={`inline-block px-5 py-2 rounded-full text-[13px] font-mono font-semibold tracking-wide transition-all ${
               winningInfo
-                ? "bg-amber-400 text-black shadow-md scale-105"
+                ? "bg-amber-400 text-black"
                 : isDraw
                 ? "bg-neutral-300 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
                 : "bg-neutral-200/80 dark:bg-neutral-800/80 text-neutral-700 dark:text-neutral-300"
@@ -484,53 +308,23 @@ export default function TicTacToe() {
           </div>
         </div>
 
-        {/* Scores Mini Pill */}
-        <div className="flex items-center gap-4 mt-3 text-xs opacity-75 font-medium">
-          <span>🐰 Rabbit: <strong>{scores.rabbit}</strong></span>
-          <span>•</span>
-          <span>Ties: <strong>{scores.draws}</strong></span>
-          <span>•</span>
-          <span>🥕 Carrot: <strong>{scores.carrot}</strong></span>
-        </div>
-      </div>
-
-      {/* Bottom Info Section: Nothing Playground Typography */}
-      <div className="w-full max-w-md flex flex-col items-center text-center mt-4">
-        {/* Title */}
-        <h1 className="text-2xl sm:text-3xl font-serif tracking-normal text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
-          Karen&apos;s Tic-tac-toe
-        </h1>
-
-        {/* Like & Play Stats Badge */}
-        <button
-          onClick={toggleLike}
-          className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 mt-1 cursor-pointer transition-all"
-        >
-          <span className="font-ndot">[{(likeCount / 1000).toFixed(1)}K]</span>
-          <Heart className={`w-3.5 h-3.5 ${liked ? "fill-rose-500 text-rose-500" : ""}`} />
-        </button>
-
-        {/* Description paragraph in dot-matrix / monospaced aesthetic */}
-        <p className="font-ndot text-xs sm:text-[13px] text-neutral-500 dark:text-neutral-400 leading-relaxed mt-4 max-w-sm px-2">
-          Simple design, instant gameplay, and endless mini matches. Play Karen&apos;s classic right on your screen – line up three marks to win.
-        </p>
-
-        {/* Yellow Action Button (Nothing Playground CTA) */}
-        <div className="w-full px-2 mt-5 mb-2">
+        <div className="w-[325px] sm:w-[355px] mt-2.5 mb-2 flex gap-2.5">
           <button
             onClick={resetGame}
-            className="w-full bg-[#f5b838] hover:bg-[#eab02e] active:scale-[0.98] text-[#1a1a1a] font-ndot font-bold text-sm tracking-wide py-3.5 px-6 rounded-2xl flex items-center justify-between shadow-md transition-all cursor-pointer"
+            className="flex-1 bg-[#f5b838] hover:bg-[#eab02e] active:scale-[0.98] text-[#1a1a1a] font-mono font-bold text-sm tracking-wide py-4 px-5 rounded-2xl flex items-center justify-center transition-all cursor-pointer"
           >
-            <span>Restart Game</span>
-            <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+            <span>New Game</span>
+          </button>
+
+          <button
+            onClick={resetAllScores}
+            className={`px-7 py-4 rounded-2xl font-mono text-sm font-semibold opacity-80 hover:opacity-100 transition-all border ${cardClass} cursor-pointer`}
+            title="Reset scores"
+          >
+            Clear
           </button>
         </div>
-
-        {/* Sub-text footer */}
-        <div className="text-[11px] text-neutral-400 dark:text-neutral-600 font-ndot mt-2">
-          ground.nothing.tech • React 19 • Geist Font
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

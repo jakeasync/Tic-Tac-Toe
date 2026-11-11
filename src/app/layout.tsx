@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Karen's Tic-tac-toe",
-  description: "Simple design, instant gameplay, and endless mini matches. Play Karen's Tic-tac-toe with Rabbit and Carrot.",
+  title: "Tic-Tac-Toe",
+  description: "Simple design, instant gameplay, and endless mini matches with Bot Avatars.",
 };
 
 export default function RootLayout({
@@ -14,8 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased min-h-screen transition-colors duration-300`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className="antialiased min-h-screen transition-colors duration-300">
         {children}
       </body>
     </html>
