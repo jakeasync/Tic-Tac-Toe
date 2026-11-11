@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Tic-Tac-Toe Game",
-  description: "Challenge your friends in this classic Tic-Tac-Toe game! Built with React 19, Next.js, and Tailwind CSS.",
+  title: "Karen's Tic-tac-toe",
+  description: "Simple design, instant gameplay, and endless mini matches. Play Karen's Tic-tac-toe with Rabbit and Carrot.",
 };
 
 export default function RootLayout({
@@ -13,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased min-h-screen">
+      <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased min-h-screen transition-colors duration-300`}>
         {children}
       </body>
     </html>
